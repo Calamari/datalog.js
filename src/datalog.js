@@ -20,6 +20,13 @@
 (function(exports) {
   'use strict';
 
+  function extend(subClass, superClass) {
+    var F = function() {};
+    F.prototype = superClass.prototype;
+    subClass.prototype = new F();
+    subClass.prototype.constructor = subClass;
+  }
+
   var LOWER_IDENTIFIER = 1,
       UPPER_IDENTIFIER = 2,
       PLUS             = 3,
@@ -39,6 +46,111 @@
   function Input(tokens) {
     this.tokens = tokens;
   }
+
+  function Term() {}
+  Term.create = function(tokens) {
+    var type = tokens[0].type,
+        i    = 0,
+        head, body, fact;
+
+    // Starts at current i and tries reading a fact e.g. father(a,b,c)
+    // Returns as Fact object
+    function readFact() {
+      var name = tokens[i].toString(),
+          parameters = [];
+
+      if (tokens[i+1].type !== OPEN_PARAM) {
+        throw new Error('Could not parse term ' + tokens.join(''));
+      }
+
+      do {
+        i += 2;
+        type = tokens[i].type;
+        if (type === LOWER_IDENTIFIER) {
+          parameters.push(new Term.Constant(tokens[i].toString()));
+        } else if (type === UPPER_IDENTIFIER) {
+          parameters.push(new Term.Variable(tokens[i].toString()));
+        }
+      } while(tokens[i+1].type === AND);
+
+      i += 1;
+      if (tokens[i].type !== CLOSE_PARAM) {
+        throw new Error('Could not parse term ' + tokens.join(''));
+      }
+
+      return new Term.Fact(name, parameters);
+    }
+
+    if (tokens.length === 1) {
+      switch (type) {
+      case PLUS:
+        return new Term.EnterWriteMode();
+      case MINUS:
+        return new Term.EnterQuestionMode();
+      case LOWER_IDENTIFIER:
+        return new Term.Predicate(tokens[0].toString());
+      default:
+        throw new Error('Could not parse term ' + tokens.join(''));
+      }
+    } else if (type === LOWER_IDENTIFIER) {
+      fact = readFact();
+
+      type = tokens[i+1].type;
+      if (type === POINT) {
+        return fact;
+      } else if (type === TURNSTILE) {
+        head = fact;
+        body = [];
+
+        do {
+          i += 2;
+          body.push(readFact());
+        } while(tokens[i+1].type === AND);
+        return new Term.Rule(head, body);
+      } else {
+        throw new Error('Could not parse term ' + tokens.join(''));
+      }
+    } else {
+      throw new Error('Could not parse term ' + tokens.join(''));
+    }
+  };
+
+  Term.EnterWriteMode = function EnterWriteMode() {
+  }
+  extend(Term.EnterWriteMode, Term);
+
+  Term.EnterQuestionMode = function EnterQuestionMode() {
+  }
+  extend(Term.EnterQuestionMode, Term);
+
+  Term.Predicate = function Predicate(value) {
+    this.value = value;
+  }
+  extend(Term.Predicate, Term);
+
+  Term.Constant = function Constant(value) {
+    this.value = value;
+  }
+  extend(Term.Constant, Term);
+
+  Term.Variable = function Variable(value) {
+    this.value = value;
+  }
+  extend(Term.Variable, Term);
+
+  Term.Fact = function Fact(name, parameters) {
+    this.name = name;
+    this.parameters = parameters;
+  }
+  extend(Term.Fact, Term);
+
+  Term.Rule = function Rule(head, body) {
+    this.head = head;
+    this.body = body;
+  }
+  extend(Term.Rule, Term);
+
+
 
   function removeComments(str) {
     return str.replace(/\/\*.*?\*\//, '');
@@ -131,7 +243,7 @@
 
       if (currentToken.isTokenEnd()) {
         tokens.push(currentToken);
-        terms.push(new Input(tokens));
+        terms.push(Term.create(tokens));
         tokens = [];
         currentToken = null;
       }
@@ -145,10 +257,8 @@
     var lexer = new Lexer(inputStr),
         terms = lexer.terms;
 
-    console.log('"' + inputStr + '" contains ' + terms.length + ' sentence(s):');
-    terms.forEach(function(input) {
-      console.log('tokens:', input.tokens.map(function(t) { return t.toString(); }));
-    });
+    console.log('"' + inputStr + '" contains ' + terms.length + ' term(s):');
+    console.log(terms);
   }
 
   exports.Datalog = Datalog;

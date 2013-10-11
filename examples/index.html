@@ -6,7 +6,7 @@
   <p>Look in your console, to see something ;-)</p>
   <script src="../src/datalog.js"></script>
   <script>
-    console.log(new Datalog('/* This is a *test* */ +father(bill,bob). parent(A,B) :- father(A  , B).'));
+    console.log(new Datalog('/* This is a *test* */ +father(bill,bob). parent(A,B) :- father(A  , B), child(B,A).'));
   </script>
 </body>
 </html>
