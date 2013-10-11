@@ -35,9 +35,13 @@
       digit       = '0123456789',
       underscore  = '_',
       anyLetter   = lowerLetter + upperLetter + digit + underscore;
-
+// Detection can be optimized: http://jsperf.com/char-testing
   function Input(tokens) {
     this.tokens = tokens;
+  }
+
+  function removeComments(str) {
+    return str.replace(/\/\*.*?\*\//, '');
   }
 
   function Token(chr) {
@@ -100,6 +104,8 @@
         tokens       = [],
         terms        = [],
         i,l, charCode;
+
+    inputStr = removeComments(inputStr);
 
     for (i=0,l=inputStr.length; i<l; ++i) {
       charCode = inputStr[i].charCodeAt();
