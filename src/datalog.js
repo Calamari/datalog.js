@@ -51,7 +51,7 @@
   Term.create = function(tokens) {
     var type = tokens[0].type,
         i    = 0,
-        head, body, atom;
+        head, body, atom, atoms;
 
     // Starts at current i and tries reading an atom e.g. father(a,b,c)
     // Returns as Atom object
@@ -98,6 +98,13 @@
       type = tokens[i+1].type;
       if (type === POINT) {
         return atom;
+      } else if (type === AND) {
+        atoms = [atom];
+        while (type === AND) {
+          i += 2;
+          atoms.push(readAtom());
+        }
+        return new Term.Formula(atoms);
       } else if (type === TURNSTILE) {
         head = atom;
         body = [];
@@ -116,38 +123,38 @@
   };
 
   Term.EnterWriteMode = function EnterWriteMode() {
-  }
+  };
   extend(Term.EnterWriteMode, Term);
 
   Term.EnterQuestionMode = function EnterQuestionMode() {
-  }
+  };
   extend(Term.EnterQuestionMode, Term);
 
   Term.Atom = function Atom(predicate, parameters) {
     this.predicate = predicate;
     this.parameters = parameters;
-  }
+  };
   extend(Term.Atom, Term);
 
   Term.Formula = function Formula(atoms) {
     this.atoms = atoms;
-  }
+  };
   extend(Term.Formula, Term);
 
   Term.Constant = function Constant(value) {
     this.value = value;
-  }
+  };
   extend(Term.Constant, Term);
 
   Term.Variable = function Variable(value) {
     this.value = value;
-  }
+  };
   extend(Term.Variable, Term);
 
   Term.Rule = function Rule(head, body) {
     this.head = head;
     this.body = body;
-  }
+  };
   extend(Term.Rule, Term);
 
 
