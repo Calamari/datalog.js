@@ -51,11 +51,11 @@
   Term.create = function(tokens) {
     var type = tokens[0].type,
         i    = 0,
-        head, body, fact;
+        head, body, atom;
 
-    // Starts at current i and tries reading a fact e.g. father(a,b,c)
-    // Returns as Fact object
-    function readFact() {
+    // Starts at current i and tries reading an atom e.g. father(a,b,c)
+    // Returns as Atom object
+    function readAtom() {
       var name = tokens[i].toString(),
           parameters = [];
 
@@ -78,7 +78,7 @@
         throw new Error('Could not parse term ' + tokens.join(''));
       }
 
-      return new Term.Fact(name, parameters);
+      return new Term.Atom(name, parameters);
     }
 
     if (tokens.length === 1) {
@@ -88,23 +88,23 @@
       case MINUS:
         return new Term.EnterQuestionMode();
       case LOWER_IDENTIFIER:
-        return new Term.Predicate(tokens[0].toString());
+        return new Term.Atom(tokens[0].toString());
       default:
         throw new Error('Could not parse term ' + tokens.join(''));
       }
     } else if (type === LOWER_IDENTIFIER) {
-      fact = readFact();
+      atom = readAtom();
 
       type = tokens[i+1].type;
       if (type === POINT) {
-        return fact;
+        return atom;
       } else if (type === TURNSTILE) {
-        head = fact;
+        head = atom;
         body = [];
 
         do {
           i += 2;
-          body.push(readFact());
+          body.push(readAtom());
         } while(tokens[i+1].type === AND);
         return new Term.Rule(head, body);
       } else {
@@ -123,10 +123,16 @@
   }
   extend(Term.EnterQuestionMode, Term);
 
-  Term.Predicate = function Predicate(value) {
-    this.value = value;
+  Term.Atom = function Atom(predicate, parameters) {
+    this.predicate = predicate;
+    this.parameters = parameters;
   }
-  extend(Term.Predicate, Term);
+  extend(Term.Atom, Term);
+
+  Term.Formula = function Formula(atoms) {
+    this.atoms = atoms;
+  }
+  extend(Term.Formula, Term);
 
   Term.Constant = function Constant(value) {
     this.value = value;
@@ -137,12 +143,6 @@
     this.value = value;
   }
   extend(Term.Variable, Term);
-
-  Term.Fact = function Fact(name, parameters) {
-    this.name = name;
-    this.parameters = parameters;
-  }
-  extend(Term.Fact, Term);
 
   Term.Rule = function Rule(head, body) {
     this.head = head;
