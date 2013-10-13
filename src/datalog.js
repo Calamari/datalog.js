@@ -27,6 +27,23 @@
     subClass.prototype.constructor = subClass;
   }
 
+  function uniq(arr) {
+    var result = [],
+        i,l;
+
+    for (i=0,l=arr.length; i<l; ++i) {
+      if (result.indexOf(arr[i]) === -1) {
+        result.push(arr[i]);
+      }
+    }
+    return result;
+  }
+
+  function flatten(arr) {
+    var result = [];
+    return result.concat.apply(result, arr);
+  }
+
   var LOWER_IDENTIFIER = 1,
       UPPER_IDENTIFIER = 2,
       PLUS             = 3,
@@ -43,11 +60,37 @@
       underscore  = '_',
       anyLetter   = lowerLetter + upperLetter + digit + underscore;
 // Detection can be optimized: http://jsperf.com/char-testing
-  function Input(tokens) {
-    this.tokens = tokens;
+
+  function SymbolTable() {
+    this.db = {};
   }
+  SymbolTable.prototype.includes = function(element) {
+    return !!this.db[element];
+  };
+  SymbolTable.prototype.get = function(element) {
+    return this.db[element];
+  };
+  SymbolTable.prototype.add = function(element, term) {
+    if (!this.db[element]) {
+      this.db[element] = [];
+    }
+    this.db[element].push(term);
+  };
+  SymbolTable.prototype.remove = function(element, term) {
+    if (this.db[element]) {
+      var index = this.db[element].indexOf(term);
+      if (index !== -1) {
+        this.db[element].splice(index, 1);
+      }
+    }
+  };
 
   function Term() {}
+
+  Term.prototype.getVariables = function() { return []; };
+  Term.prototype.getConstants = function() { return []; };
+  Term.prototype.getPredicates = function() { return []; };
+
   Term.create = function(tokens) {
     var type = tokens[0].type,
         i    = 0,
@@ -135,27 +178,82 @@
     this.parameters = parameters;
   };
   extend(Term.Atom, Term);
+  Term.Atom.prototype.getPredicates = function() { return [this.predicate]; };
+  Term.Atom.prototype.getConstants = function() {
+    var constants = this.parameters.map(function(p) {
+      return p.getConstants();
+    });
+    return uniq(flatten(constants));
+  };
+  Term.Atom.prototype.getVariables = function() {
+    var variables = this.parameters.map(function(p) {
+      return p.getVariables();
+    });
+    return uniq(flatten(variables));
+  };
 
   Term.Formula = function Formula(atoms) {
     this.atoms = atoms;
   };
   extend(Term.Formula, Term);
+  Term.Formula.prototype.getVariables = function() {
+    var variables = this.atoms.map(function(atom) {
+      return atom.getVariables();
+    });
+    return uniq(flatten(variables));
+  };
+  Term.Formula.prototype.getConstants = function() {
+    var constants = this.atoms.map(function(atom) {
+      return atom.getConstants();
+    });
+    return uniq(flatten(constants));
+  };
+  Term.Formula.prototype.getPredicates = function() {
+    var predicates = this.atoms.map(function(atom) {
+      return atom.getPredicates();
+    });
+    return uniq(flatten(predicates));
+  };
+
 
   Term.Constant = function Constant(value) {
     this.value = value;
   };
   extend(Term.Constant, Term);
+  Term.Constant.prototype.getConstants = function() { return [this.value]; };
 
   Term.Variable = function Variable(value) {
     this.value = value;
   };
   extend(Term.Variable, Term);
+  Term.Variable.prototype.getVariables = function() { return [this.value]; };
 
   Term.Rule = function Rule(head, body) {
     this.head = head;
     this.body = body;
   };
   extend(Term.Rule, Term);
+  Term.Rule.prototype.getVariables = function() {
+    var variables = [ this.head.getVariables() ];
+    this.body.forEach(function(t) {
+      variables.push(t.getVariables());
+    });
+    return uniq(flatten(variables));
+  };
+  Term.Rule.prototype.getConstants = function() {
+    var constants = [ this.head.getConstants() ];
+    this.body.forEach(function(t) {
+      constants.push(t.getConstants());
+    });
+    return uniq(flatten(constants));
+  };
+  Term.Rule.prototype.getPredicates = function() {
+    var predicates = [ this.head.getPredicates() ];
+    this.body.forEach(function(t) {
+      predicates.push(t.getPredicates());
+    });
+    return uniq(flatten(predicates));
+  };
 
 
 
@@ -218,6 +316,32 @@
     return this.type === POINT || this.type === PLUS || this.type === MINUS;
   };
 
+  function Parser(terms, tables) {
+    var i, l, term;
+    this.questionMode = false;
+
+    for (i=0,l=terms.length; i<l; ++i) {
+      term = terms[i];
+      term.getVariables().forEach(function(v) {
+        tables.variables.add(v, term);
+      });
+      term.getConstants().forEach(function(v) {
+        tables.names.add(v, term);
+      });
+      term.getPredicates().forEach(function(v) {
+        tables.predicates.add(v, term);
+      });
+    }
+  }
+
+  Parser.prototype.isEntering = function() {
+    return !this.questionMode;
+  };
+
+  Parser.prototype.isAsking = function() {
+    return this.questionMode;
+  };
+
   function Lexer(inputStr) {
     var currentToken = null,
         tokens       = [],
@@ -262,10 +386,27 @@
 
   function Datalog(inputStr) {
     var lexer = new Lexer(inputStr),
-        terms = lexer.terms;
+        terms = lexer.terms,
+
+        // quick access for predicates
+        predicatesTable = new SymbolTable(),
+        // quick access for constants
+        namesTable      = new SymbolTable(),
+        // quick access for variables
+        variablesTable  = new SymbolTable();
 
     console.log('"' + inputStr + '" contains ' + terms.length + ' term(s):');
     console.log(terms);
+    new Parser(terms, {
+      predicates: predicatesTable,
+      names: namesTable,
+      variables: variablesTable
+    });
+    console.log("Tables:", {
+      predicates: predicatesTable,
+      names: namesTable,
+      variables: variablesTable
+    });
   }
 
   exports.Datalog = Datalog;

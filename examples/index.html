@@ -7,6 +7,7 @@
   <script src="../src/datalog.js"></script>
   <script>
     console.log(new Datalog('/* This is a *test* */ +father(bill,bob). parent(A,B) :- father(A  , B), child(B,A).'));
+    console.log(new Datalog('+mother(jane,bob),father(bill,bob).'));
   </script>
 </body>
 </html>
