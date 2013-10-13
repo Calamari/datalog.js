@@ -16,6 +16,13 @@
                      followed by further letters, digits and underscores
   u-identifier  ::=  uppercase letter,
                      followed by further letters, digits and underscores
+
+  TODO:
+   - Datalog.insert for inserting more stuff
+   - Datalog.query for querying the knowledge base
+   - negation (that is not in the EBNF above :-/)
+   - & character
+   - Parser for Prefix Notation
 */
 (function(exports) {
   'use strict';
@@ -342,51 +349,53 @@
     return this.questionMode;
   };
 
-  function Lexer(inputStr) {
-    var currentToken = null,
-        tokens       = [],
-        terms        = [],
-        i,l, charCode;
-
-    inputStr = removeComments(inputStr);
-
-    for (i=0,l=inputStr.length; i<l; ++i) {
-      charCode = inputStr[i].charCodeAt();
-      // skip if it is a whitespace char
-      if (charCode <= 32) {
-        continue;
-      }
-
-      if (!currentToken) {
-        currentToken = new Token(inputStr[i]);
-      } else {
-        if (currentToken.accepts(inputStr[i])) {
-          currentToken.add(inputStr[i]);
-        } else {
-          tokens.push(currentToken);
-          currentToken = new Token(inputStr[i]);
-        }
-      }
-
-      if (currentToken.type === null) {
-        throw new Error('Syntax error/unrecognized token ' + inputStr[i] + ' (charCode: ' + charCode + ')');
-      }
-
-      if (currentToken.isTokenEnd()) {
-        tokens.push(currentToken);
-        terms.push(Term.create(tokens));
-        tokens = [];
-        currentToken = null;
-      }
-    }
+  function Lexer() {
     return {
-      terms: terms
+      parse: function parse(inputStr) {
+        var currentToken = null,
+            tokens       = [],
+            terms        = [],
+            i,l, charCode;
+
+        inputStr = removeComments(inputStr);
+
+        for (i=0,l=inputStr.length; i<l; ++i) {
+          charCode = inputStr[i].charCodeAt();
+          // skip if it is a whitespace char
+          if (charCode <= 32) {
+            continue;
+          }
+
+          if (!currentToken) {
+            currentToken = new Token(inputStr[i]);
+          } else {
+            if (currentToken.accepts(inputStr[i])) {
+              currentToken.add(inputStr[i]);
+            } else {
+              tokens.push(currentToken);
+              currentToken = new Token(inputStr[i]);
+            }
+          }
+
+          if (currentToken.type === null) {
+            throw new Error('Syntax error/unrecognized token ' + inputStr[i] + ' (charCode: ' + charCode + ')');
+          }
+
+          if (currentToken.isTokenEnd()) {
+            tokens.push(currentToken);
+            terms.push(Term.create(tokens));
+            tokens = [];
+            currentToken = null;
+          }
+        }
+        return terms;
+      }
     };
   }
 
   function Datalog(inputStr) {
-    var lexer = new Lexer(inputStr),
-        terms = lexer.terms,
+    var lexer = new Lexer(),
+        terms = [],
 
         // quick access for predicates
         predicatesTable = new SymbolTable(),
@@ -395,18 +404,24 @@
         // quick access for variables
         variablesTable  = new SymbolTable();
 
-    console.log('"' + inputStr + '" contains ' + terms.length + ' term(s):');
-    console.log(terms);
-    new Parser(terms, {
-      predicates: predicatesTable,
-      names: namesTable,
-      variables: variablesTable
-    });
-    console.log("Tables:", {
-      predicates: predicatesTable,
-      names: namesTable,
-      variables: variablesTable
-    });
+    function _parse(input) {
+      var newTerms = lexer.parse(inputStr);
+      terms = flatten([terms, newTerms]);
+      console.log('"' + inputStr + '" contains ' + terms.length + ' term(s):');
+      console.log(newTerms);
+      new Parser(terms, {
+        predicates: predicatesTable,
+        names: namesTable,
+        variables: variablesTable
+      });
+      console.log("Indextables now contain:", {
+        predicates: predicatesTable,
+        names: namesTable,
+        variables: variablesTable
+      });
+    }
+
+    _parse(inputStr);
   }
 
   exports.Datalog = Datalog;
