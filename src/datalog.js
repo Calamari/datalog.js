@@ -425,4 +425,5 @@
   }
 
   exports.Datalog = Datalog;
-}(window));
+  // this is window in browser and exports in node.js
+}(this));
