@@ -297,7 +297,7 @@
     } else if (chr === '.') {
       this.type = POINT;
       this.finished = true;
-    } else if (chr === ',') {
+    } else if (chr === ',' || chr === '&') {
       this.type = AND;
       this.finished = true;
     } else if (chr === '~') {

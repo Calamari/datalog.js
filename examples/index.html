@@ -8,7 +8,7 @@
   <script>
     console.log(new Datalog('/* This is a *test* */ +father(bill,bob). parent(A,B) :- father(A  , B), child(B,A).'));
     console.log(new Datalog('+mother(jane,bob),father(bill,bob).'));
-    console.log(new Datalog('+mother(X,Y):- ~father(X,Y).'));
+    console.log(new Datalog('+mother(X,Y):- ~father(X,Y) & female(X).'));
   </script>
 </body>
 </html>
