@@ -60,6 +60,7 @@
       TURNSTILE        = 7,
       OPEN_PARAM       = 8,
       CLOSE_PARAM      = 9,
+      NOT              = 10,
 
       lowerLetter = 'abcdefghijklmnopqrstuvwxyz',
       upperLetter = lowerLetter.toUpperCase(),
@@ -106,8 +107,17 @@
     // Starts at current i and tries reading an atom e.g. father(a,b,c)
     // Returns as Atom object
     function readAtom() {
-      var name = tokens[i].toString(),
-          parameters = [];
+      var parameters = [],
+          name,
+          negated;
+
+      if (tokens[i].type === NOT) {
+        negated = true;
+        i += 1;
+      } else {
+        negated = false;
+      }
+      name = tokens[i].toString();
 
       if (tokens[i+1].type !== OPEN_PARAM) {
         throw new Error('Could not parse term ' + tokens.join(''));
@@ -128,7 +138,7 @@
         throw new Error('Could not parse term ' + tokens.join(''));
       }
 
-      return new Term.Atom(name, parameters);
+      return new Term.Atom(name, parameters, negated);
     }
 
     if (tokens.length === 1) {
@@ -180,9 +190,10 @@
   };
   extend(Term.EnterQuestionMode, Term);
 
-  Term.Atom = function Atom(predicate, parameters) {
+  Term.Atom = function Atom(predicate, parameters, negated) {
     this.predicate = predicate;
     this.parameters = parameters;
+    this.negated = negated;
   };
   extend(Term.Atom, Term);
   Term.Atom.prototype.getPredicates = function() { return [this.predicate]; };
@@ -288,6 +299,9 @@
       this.finished = true;
     } else if (chr === ',') {
       this.type = AND;
+      this.finished = true;
+    } else if (chr === '~') {
+      this.type = NOT;
       this.finished = true;
     } else if (chr === ':') {
       this.type = TURNSTILE;
