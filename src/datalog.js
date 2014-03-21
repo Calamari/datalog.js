@@ -23,6 +23,8 @@
    - negation (that is not in the EBNF above :-/)
    - & character
    - Parser for Prefix Notation
+
+   read here as well: http://artint.info/html/ArtInt_281.html
 */
 (function(exports) {
   'use strict';

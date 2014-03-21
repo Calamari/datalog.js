@@ -1,0 +1,13 @@
+{
+  "author": "Georg Tavonius <g.tavonius@gmail.com> (http://jaz-lounge.com)",
+  "name": "datalog.js",
+  "description": "Datalog Parser and Interpreter written in JavaScript.",
+  "version": "0.0.1",
+  "engines": {},
+  "dependencies": {
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "expect.js": "*"
+  }
+}
