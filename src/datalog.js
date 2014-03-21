@@ -405,6 +405,9 @@
             currentToken = null;
           }
         }
+        if (tokens.length) {
+          throw new Error('Syntax error: Missing ending .');
+        }
         return terms;
       }
     };
