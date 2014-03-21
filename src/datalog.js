@@ -23,10 +23,11 @@
    - negation (that is not in the EBNF above :-/)
    - & character
    - Parser for Prefix Notation
+   - Checker that every variable in the head of a clause does appear in the body of the clause?
 
    read here as well: http://artint.info/html/ArtInt_281.html
 */
-(function(exports) {
+(function() {
   'use strict';
 
   function extend(subClass, superClass) {
@@ -440,6 +441,10 @@
     _parse(inputStr);
   }
 
-  exports.Datalog = Datalog;
+  if (typeof window !== 'undefined') {
+    window.Datalog = Datalog;
+  } else {
+    module.exports = Datalog;
+  }
   // this is window in browser and exports in node.js
-}(this));
+}());
