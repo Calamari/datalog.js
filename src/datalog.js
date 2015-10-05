@@ -24,6 +24,7 @@
    - & character
    - Parser for Prefix Notation
    - Checker that every variable in the head of a clause does appear in the body of the clause?
+   - Allow queries to end with ? instead of .
 
    read here as well: http://artint.info/html/ArtInt_281.html
 */
@@ -366,6 +367,20 @@
     return this.questionMode;
   };
 
+  function Interpreter(tables) {
+    return {
+      query: function query(terms) {
+        // First one: its an atom
+        console.log("query", terms);
+        var predicates = tables.predicates.get(terms[0].predicate);
+        console.log("for", terms, predicates);
+        for (var i=0, l=predicates.length; i<l; ++i) {
+          console.log("p", predicates[i]);
+        }
+      }
+    };
+  }
+
   function Lexer() {
     return {
       parse: function parse(inputStr) {
@@ -422,7 +437,13 @@
         // quick access for constants
         namesTable      = new SymbolTable(),
         // quick access for variables
-        variablesTable  = new SymbolTable();
+        variablesTable  = new SymbolTable(),
+
+        interpreter     = new Interpreter({
+          predicates: predicatesTable,
+          names: namesTable,
+          variables: variablesTable
+        });
 
     function _parse(input) {
       var newTerms = lexer.parse(inputStr);
@@ -441,7 +462,17 @@
       });
     }
 
+    function _query(queryStr) {
+      var terms = lexer.parse(queryStr);
+      interpreter.query(terms);
+    }
+
     _parse(inputStr);
+
+    return {
+      insert: _parse,
+      query: _query
+    };
   }
 
   if (typeof window !== 'undefined') {
